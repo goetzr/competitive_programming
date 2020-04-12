@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -25,12 +26,13 @@ int pow10(int n) {
   return result;
 }
 
-int right_digits(int n, int nd) {
-  // TODO: Implement this
+int right_digits(int n, int ndigits) {
+  auto scale = pow10(ndigits);
+  return n - (n / scale * scale);
 }
 
 int right_digit(int n) {
-  return n - (n / 10 * 10);
+  return right_digits(n, 1);
 }
 
 int reversed_digits(int n) {
@@ -40,11 +42,14 @@ int reversed_digits(int n) {
     reversed += right_digit(n);
     n /= 10;
   }
+  return reversed;
 }
 
 class NotPalindromeException {};
 
 /**
+ * Represents a Palindromic number.
+ * 
  * A number's core is used to determine whether the number is a palindrome, or, if the number is a palindrome,
  * to increment/decrement it to the next higher/lower palindrome.
  * 
@@ -69,6 +74,10 @@ class NotPalindromeException {};
  */
 class Palindrome {
  public:
+  /**
+   * Represents the specified palindromic number. If the number is not a palindrome,
+   * the nearest palindrome to the number is represented.
+   */
   Palindrome(int n) {
     nd_ = num_digits(n);
     // Remove the right half of the number's digits to form the core.
@@ -76,13 +85,9 @@ class Palindrome {
     //       because it does not remove the middle digit, as desired.
     core_ = n / pow10(nd_ / 2);
     mirror_ = get_mirror();
-
-    if (right_digits(n, num_digits(mirror_)) != reversed_digits(mirror_)) {
-      throw NotPalindromeException();
-    }
   }
 
-  int value() const {    
+  int value() const {
     return core_ * pow10(nd_ / 2) + reversed_digits(mirror_);
   }
 
@@ -92,6 +97,15 @@ class Palindrome {
     if (num_digits(core_) != nd_last_core) {
       ++nd_;
       core_ /= 10;
+    }
+    mirror_ = get_mirror();
+  }
+
+  void decrement() {
+    auto nd_last_core = num_digits(core_);
+    --core_;
+    if (num_digits(core_) != nd_last_core) {
+      --nd_;
     }
     mirror_ = get_mirror();
   }
@@ -110,80 +124,46 @@ class Palindrome {
 
 class Problem4 {
  public:
-  int lpp(int n1, int n2) {
-    return 0;
-  }
-
-  void run_tests() {
-    ASSERT(num_digits(101) == 3)
-    ASSERT(num_digits(10001) == 5)
-    ASSERT(num_digits(100001) == 6)
-
-    ASSERT(get_core(101) == 10)
-    ASSERT(get_core(10001) == 100)
-    ASSERT(get_core(100001) == 100)
-    ASSERT(get_core(1000001) == 1000)
-    
-    cout << "TESTS DONE" << endl;
+  int lpp(int ndigits) {
+    auto sp = find_starting_palindrome(ndigits);
+    while (!has_factor_pair_with_ndigits(sp.value(), ndigits)) {
+      sp.decrement();
+    }
+    return sp.value();
   }
 
  private:
-
-
-  /**
-   * Gets the core of the specified number.
-   * 
-   * A number's core is used to determine whether the number is a palindrome, or, if the number is a palindrome,
-   * to increment/decrement it to the next higher/lower palindrome.
-   * 
-   * A number's core is formed by taking the appropriate number of digits from the front of the number.
-   * The number of digits taken is determined by the mirror axis of the number.
-   * For numbers with an even number of digits, this is the front half of the digits.
-   * For numbers with an odd number of digits, this is the front half of the digits and the middle digit.
-   *
-   * The numbe specified is assumed to have at least 2 digits.
-   * 
-   * Examples:
-   * n = 11,      core = 1,     mirror = 1
-   * n = 101,     core = 10,    mirror = 1
-   * n = 1001,    core = 10,    mirror = 10
-   * n = 10001,   core = 100,   mirror = 10
-   * n = 100001,  core = 100,   mirror = 100
-   * n = 1000001, core = 1000,  mirror = 100
-   * 
-   * @param n   The number whose core should be found.
-   * 
-   * @return The specified number's core.
-   */
-  int get_core(int n) {
-    // Remove the right half of the number's digits.
-    // NOTE: This also works for numbers with an odd number of digits,
-    //       because it does not remove the middle digit, as desired.
-    return n / pow10(num_digits(n) / 2);
-  }
-
-  bool is_palindrome(int n) {
-    auto core = get_core(n);
-  }
-
-  int find_starting_palindrome(int num_digits) {
+  Palindrome find_starting_palindrome(int ndigits) {
     // Find the largest number with the specified number of digits.
-    int n = 1;
-    for (int i = 0; i < num_digits; ++i) {
-      n *= 10;
-    }
-    --n;
+    auto n = pow10(ndigits) - 1;
 
     // Square this number to find the largest product.
     int largest_product = n * n;
 
+    // Find the largest palindrome that is <= the largest product.
+    Palindrome starting_palindrome(largest_product);
+    if (starting_palindrome.value() > largest_product) {
+      starting_palindrome.decrement();
+    }
+    
+    return starting_palindrome;
+  }
+
+  bool has_factor_pair_with_ndigits(int n, int ndigits) {
+    auto starting_factor = pow10(ndigits - 1); 
+    for (auto i = starting_factor; num_digits(i) == ndigits && i < sqrt(n); ++i) {
+      if (n % i == 0 && num_digits(n / i) == ndigits) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
 int main() {
   Problem4 p4;
 
-  p4.run_tests();
+  cout << "Largest palindrome made from product of two 2-digit numbers: " << p4.lpp(2) << endl;
 
   return 0;
 }
