@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <utility>
 
 using namespace std;
 
@@ -124,9 +125,9 @@ class Palindrome {
 
 class Problem4 {
  public:
-  int lpp(int ndigits) {
+  int lpp(int ndigits, pair<int, int>& factors) {
     auto sp = find_starting_palindrome(ndigits);
-    while (!has_factor_pair_with_ndigits(sp.value(), ndigits)) {
+    while (!has_factor_pair_with_ndigits(sp.value(), ndigits, factors)) {
       sp.decrement();
     }
     return sp.value();
@@ -149,10 +150,12 @@ class Problem4 {
     return starting_palindrome;
   }
 
-  bool has_factor_pair_with_ndigits(int n, int ndigits) {
+  bool has_factor_pair_with_ndigits(int n, int ndigits, pair<int, int>& factors) {
     auto starting_factor = pow10(ndigits - 1); 
     for (auto i = starting_factor; num_digits(i) == ndigits && i < sqrt(n); ++i) {
       if (n % i == 0 && num_digits(n / i) == ndigits) {
+        factors.first = i;
+        factors.second = n / i;
         return true;
       }
     }
@@ -163,7 +166,9 @@ class Problem4 {
 int main() {
   Problem4 p4;
 
-  cout << "Largest palindrome made from product of two 2-digit numbers: " << p4.lpp(2) << endl;
+  pair<int, int> factors;
+  cout << "Largest palindrome made from product of two 2-digit numbers: " << p4.lpp(2, factors) << " = " << factors.first << " * " << factors.second << endl;
+  cout << "Largest palindrome made from product of two 3-digit numbers: " << p4.lpp(3, factors) << " = " << factors.first << " * " << factors.second << endl;
 
   return 0;
 }
